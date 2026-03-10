@@ -152,12 +152,9 @@ const name=document.getElementById("name").value;
 
 if(!name)return;
 
-const id=Math.floor(Math.random()*999999);
-
 const {error}=await supabaseClient
 .from('members')
 .insert({
-id:id,
 name:name
 });
 
