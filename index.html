@@ -1,937 +1,192 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>شجرة العائلة</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    :root {
-      --bg-deep:    #060d18;
-      --bg-mid:     #0d1f35;
-      --bg-card:    #0a1828;
-      --blue:       #4a90d9;
-      --blue-dark:  #2e6da4;
-      --blue-bg:    #1a3a5c;
-      --purple:     #c46dd4;
-      --purple-dark:#8e3a9e;
-      --purple-bg:  #3a1a3c;
-      --green:      #4ad95a;
-      --green-dark: #2e8a3e;
-      --green-bg:   #1a3a1a;
-      --gold:       #f5c518;
-      --text:       #d0e8ff;
-      --muted:      #5a8ab0;
-      --border:     #1a3a5c;
-      --red:        #e04040;
-      --red-bg:     #3a0d0d;
-    }
+<title>شجرة العائلة</title>
 
-    html { font-size: 16px; }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background: linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 50%, #0a1520 100%);
-      min-height: 100vh;
-      color: var(--text);
-      overflow-x: hidden;
-    }
+<style>
 
-    /* ─── Scrollbar ─── */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-deep); }
-    ::-webkit-scrollbar-thumb { background: #2a4a6a; border-radius: 3px; }
+body{
+font-family: Tahoma;
+background:#0d1f35;
+color:white;
+padding:30px;
+text-align:center;
+}
 
-    /* ─── Stars ─── */
-    #stars {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      overflow: hidden;
-    }
-    .star {
-      position: absolute; border-radius: 50%; background: #fff;
-    }
+button{
+padding:10px 18px;
+border:none;
+background:#4a90d9;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
 
-    /* ─── Header ─── */
-    #header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(6,13,24,0.88);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      padding: 14px 28px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid rgba(26,58,92,0.5);
-      gap: 12px; flex-wrap: wrap;
-    }
-    #header h1 {
-      font-family: 'Amiri', serif;
-      font-size: 26px; color: var(--text);
-      text-shadow: 0 0 24px rgba(74,144,217,0.35);
-      line-height: 1.2;
-    }
-    #header .subtitle { color: var(--muted); font-size: 11px; margin-top: 2px; }
-    #header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+input{
+padding:8px;
+margin:5px;
+border-radius:6px;
+border:none;
+}
 
-    /* ─── Inputs ─── */
-    input[type="text"], select {
-      font-family: 'Tajawal', sans-serif;
-      background: var(--bg-card);
-      border: 1px solid #2a4a6a;
-      color: var(--text);
-      border-radius: 10px;
-      padding: 8px 13px;
-      font-size: 13px;
-      outline: none;
-      transition: border-color .2s;
-      width: 100%;
-    }
-    input[type="text"]:focus, select:focus { border-color: var(--blue); }
-    input::placeholder { color: #3a5a7a; }
-    select option { background: #0a1828; color: var(--text); }
+.member{
+background:#132b46;
+padding:10px;
+margin:6px;
+border-radius:6px;
+}
 
-    #search-input {
-      width: 160px; border-radius: 20px;
-      padding: 7px 14px;
-    }
+#sync-status{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+background:#132b46;
+padding:6px 16px;
+border-radius:20px;
+font-size:12px;
+}
 
-    /* ─── Buttons ─── */
-    .btn {
-      font-family: 'Tajawal', sans-serif;
-      border: none; cursor: pointer;
-      border-radius: 20px; padding: 7px 18px;
-      font-size: 13px; font-weight: 700;
-      transition: opacity .15s, transform .15s, box-shadow .15s;
-      white-space: nowrap;
-    }
-    .btn:hover { opacity: .87; transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--blue-dark), var(--blue));
-      color: #fff;
-      box-shadow: 0 3px 14px rgba(74,144,217,.3);
-    }
-    .btn-purple {
-      background: linear-gradient(135deg, #6a2e9e, var(--purple));
-      color: #fff;
-    }
-    .btn-red {
-      background: linear-gradient(135deg, #a02020, var(--red));
-      color: #fff;
-    }
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid #2a4a6a !important;
-      color: var(--muted);
-      border-radius: 10px;
-    }
+</style>
 
-    /* ─── Legend ─── */
-    #legend {
-      position: fixed; top: 88px; left: 14px; z-index: 10;
-      background: rgba(10,24,40,.88);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border);
-      border-radius: 13px; padding: 10px 14px;
-    }
-    #legend .leg-title { color: #4a6a8a; font-size: 10px; font-weight: 700; margin-bottom: 6px; }
-    .leg-item { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
-    .leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .leg-item span { color: #7aaac0; font-size: 11px; }
-    .leg-divider { border-top: 1px solid var(--border); margin: 7px 0; }
-    .leg-hint { color: #5a8a6a; font-size: 10px; margin-top: 2px; }
-
-    /* ─── Tree Canvas ─── */
-    #tree-canvas {
-      padding: 26px 40px 140px;
-      overflow-x: auto;
-      position: relative; z-index: 1;
-      min-height: calc(100vh - 72px);
-    }
-    #tree-wrap { display: inline-block; min-width: 100%; }
-
-    /* ─── Member Card ─── */
-    .member-card {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 13px 16px;
-      border-radius: 14px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      min-width: 140px; max-width: 172px;
-      text-align: center;
-      transition: transform .25s, box-shadow .25s, border-color .25s;
-      user-select: none;
-    }
-    .member-card:hover { transform: translateY(-3px) scale(1.03); }
-    .member-card.selected {
-      border-color: var(--gold) !important;
-      transform: scale(1.07);
-      box-shadow: 0 0 24px rgba(245,197,24,.35), 0 6px 22px rgba(0,0,0,.55) !important;
-    }
-    .member-card .avatar {
-      width: 48px; height: 48px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; margin-bottom: 9px;
-      border: 2px solid transparent;
-    }
-    .member-card .card-name {
-      font-family: 'Amiri', serif;
-      font-size: 13px; font-weight: 700; line-height: 1.4;
-    }
-    .member-card .card-dates { font-size: 10px; margin-top: 3px; opacity: .7; }
-
-    /* card colours */
-    .card-male   { background: linear-gradient(135deg, #1a3a5c, rgba(46,109,164,.15)); border-color: var(--blue); }
-    .card-male .avatar   { background: radial-gradient(circle, var(--blue-dark), var(--blue-bg)); border-color: var(--blue); box-shadow: 0 0 10px rgba(74,144,217,.5); }
-    .card-male .card-name   { color: #d0e8ff; }
-    .card-male .card-dates  { color: #d0e8ff; }
-    .card-male   { box-shadow: 0 4px 16px rgba(0,0,0,.45); }
-
-    .card-female { background: linear-gradient(135deg, #3a1a3c, rgba(142,58,158,.15)); border-color: var(--purple); }
-    .card-female .avatar { background: radial-gradient(circle, var(--purple-dark), var(--purple-bg)); border-color: var(--purple); box-shadow: 0 0 10px rgba(196,109,212,.5); }
-    .card-female .card-name  { color: #f8d0ff; }
-    .card-female .card-dates { color: #f8d0ff; }
-    .card-female { box-shadow: 0 4px 16px rgba(0,0,0,.45); }
-
-    .card-self   { background: linear-gradient(135deg, #1a3a1a, rgba(46,138,62,.15)); border-color: var(--green); }
-    .card-self .avatar   { background: radial-gradient(circle, var(--green-dark), var(--green-bg)); border-color: var(--green); box-shadow: 0 0 10px rgba(74,217,90,.5); }
-    .card-self .card-name   { color: #d0ffd8; }
-    .card-self .card-dates  { color: #d0ffd8; }
-    .card-self   { box-shadow: 0 4px 16px rgba(0,0,0,.45); }
-
-    /* ─── Tree connectors ─── */
-    .tree-level { display: flex; gap: 24px; justify-content: center; align-items: flex-start; }
-    .tree-node  { display: flex; flex-direction: column; align-items: center; }
-    .connector-v {
-      width: 2px; height: 26px;
-      background: linear-gradient(to bottom, var(--blue), var(--purple));
-      opacity: .7;
-    }
-    .connector-h-wrap { position: relative; }
-    .connector-h {
-      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-      width: 80%; height: 2px;
-      background: linear-gradient(to right, var(--blue), var(--purple));
-      opacity: .45;
-    }
-
-    /* ─── Detail Panel ─── */
-    #detail-panel {
-      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-      background: linear-gradient(135deg, #0a1828, #112240);
-      border: 1.5px solid var(--blue);
-      border-radius: 18px; padding: 16px 20px;
-      display: none; gap: 14px; align-items: center;
-      box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 30px rgba(74,144,217,.12);
-      z-index: 200; max-width: 96vw; min-width: 300px;
-      animation: slideUp .3s ease;
-    }
-    #detail-panel.visible { display: flex; }
-    .detail-avatar {
-      width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; border: 2px solid transparent;
-    }
-    #detail-name { font-family: 'Amiri', serif; font-size: 16px; font-weight: 700; }
-    #detail-meta { font-size: 11px; color: #7aabcc; margin-top: 2px; }
-    #detail-parent { font-size: 11px; color: var(--muted); margin-top: 1px; }
-    #detail-children { font-size: 11px; color: #3a8a5a; margin-top: 1px; }
-    #detail-bio { font-size: 11px; color: #4a7a9a; font-style: italic; margin-top: 2px; }
-    .detail-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-    .detail-actions button {
-      font-family: 'Tajawal', sans-serif;
-      padding: 5px 13px; border-radius: 9px;
-      font-size: 12px; cursor: pointer;
-      white-space: nowrap; border: 1px solid;
-      transition: opacity .15s, transform .15s;
-    }
-    .detail-actions button:hover { opacity: .85; transform: translateY(-1px); }
-    #btn-edit-detail   { background: rgba(106,46,158,.22); border-color: var(--purple); color: #e8a0f0; }
-    #btn-delete-detail { background: var(--red-bg); border-color: #a04040; color: #ff8080; }
-    #btn-close-detail  { background: transparent; border-color: var(--border); color: #4a7a9a; }
-
-    /* ─── Modals ─── */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,.75);
-      z-index: 1000; display: none;
-      align-items: center; justify-content: center;
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal-box {
-      border-radius: 20px; padding: 28px 26px;
-      width: 390px; max-width: 95vw;
-      max-height: 92vh; overflow-y: auto;
-      box-shadow: 0 24px 64px rgba(0,0,0,.75);
-      animation: modalIn .28s ease;
-    }
-    .modal-form-box {
-      background: linear-gradient(160deg, #0a1828, #112240);
-      border: 1.5px solid var(--blue);
-    }
-    .modal-form-box.edit-mode { border-color: var(--purple); }
-    .modal-delete-box {
-      background: linear-gradient(160deg, #1a0a0a, #2e1010);
-      border: 1.5px solid #a04040;
-      text-align: center;
-    }
-    .modal-title {
-      font-family: 'Amiri', serif; font-size: 20px;
-      text-align: center; margin-bottom: 20px;
-    }
-    .form-group { margin-bottom: 12px; }
-    .form-label { color: #7aabcc; font-size: 12px; display: block; margin-bottom: 4px; }
-    .gender-row { display: flex; gap: 8px; }
-    .gender-btn {
-      flex: 1; padding: 7px; border-radius: 9px;
-      font-family: 'Tajawal', sans-serif; font-size: 13px;
-      cursor: pointer; border: 1.5px solid #2a4a6a;
-      background: transparent; color: var(--muted);
-      transition: all .2s;
-    }
-    .gender-btn.active-male   { border-color: var(--blue);   background: var(--blue-bg);   color: #d0e8ff; }
-    .gender-btn.active-female { border-color: var(--purple); background: var(--purple-bg); color: #f8d0ff; }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-    .modal-actions .btn { border-radius: 11px; padding: 10px 0; flex: 1; font-size: 14px; }
-    .modal-actions .btn-ghost { border: 1px solid #2a4a6a !important; }
-
-    /* delete modal */
-    .delete-icon { font-size: 44px; margin-bottom: 12px; }
-    .delete-title { font-family: 'Amiri', serif; color: #ff8888; font-size: 19px; margin-bottom: 10px; }
-    .delete-msg { color: #cc9090; font-size: 13px; line-height: 1.75; margin-bottom: 6px; }
-    .delete-warning {
-      color: #ff7070; font-size: 12px;
-      background: #3a1010; padding: 6px 10px;
-      border-radius: 8px; margin-bottom: 16px;
-    }
-
-    /* ─── Search results ─── */
-    #search-results {
-      display: none; flex-wrap: wrap; gap: 18px;
-      justify-content: center; padding: 10px 0;
-    }
-    #search-results.visible { display: flex; }
-    #search-label { color: var(--muted); font-size: 12px; text-align: center; margin-bottom: 14px; }
-    #no-results { color: #3a5a7a; font-size: 14px; text-align: center; margin-top: 60px; display: none; }
-
-    /* ─── Animations ─── */
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(18px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(.94); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-
-    /* ─── Responsive ─── */
-    @media (max-width: 600px) {
-      #legend { display: none; }
-      #tree-canvas { padding: 16px 10px 140px; }
-      .tree-level { gap: 12px; }
-      #header { padding: 10px 14px; }
-      #search-input { width: 110px; }
-    }
-  </style>
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    #sync-status {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      background: rgba(10,24,40,.92); border: 1px solid #2a4a6a;
-      color: #7aabcc; font-size: 11px; padding: 5px 16px; border-radius: 20px;
-      z-index: 300; display: none; font-family: 'Tajawal', sans-serif;
-      transition: all .3s;
-    }
-    #sync-status.show { display: block; }
-    #sync-status.ok   { border-color: #4ad95a; color: #4ad95a; }
-    #sync-status.err  { border-color: #e04040; color: #ff8080; }
-  </style>
 </head>
+
 <body>
 
-<!-- Stars -->
-<div id="stars"></div>
+<h1>🌳 شجرة العائلة</h1>
 
-<!-- Header -->
-<header id="header">
-  <div>
-    <h1>🌳 شجرة العائلة</h1>
-    <div class="subtitle" id="member-count"></div>
-  </div>
-  <div id="header-actions">
-    <input type="text" id="search-input" placeholder="🔍 ابحث بالاسم..." oninput="handleSearch()" />
-    <button class="btn btn-primary" onclick="openAddModal()">➕ إضافة فرد</button>
-  </div>
-</header>
+<div>
 
-<!-- Legend -->
-<div id="legend">
-  <div class="leg-title">المفتاح</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#4a90d9"></div><span>ذكر</span></div>
-  <div class="leg-item"><div class="leg-dot" style="background:#c46dd4"></div><span>أنثى</span></div>
-  <div class="leg-item"><div class="leg-dot" style="background:#4ad95a"></div><span>أنت</span></div>
-  <div class="leg-item"><div class="leg-dot" style="background:#f5c518"></div><span>محدد</span></div>
-  <div class="leg-divider"></div>
-  <div class="leg-hint">انقر على فرد</div>
-  <div class="leg-hint">← تعديل أو حذف</div>
+<input id="name" placeholder="اسم الفرد">
+
+<button onclick="addMember()">إضافة</button>
+
 </div>
 
-<!-- Tree Canvas -->
-<main id="tree-canvas">
-  <div id="search-label"></div>
-  <div id="no-results">لا توجد نتائج</div>
-  <div id="search-results"></div>
-  <div id="tree-wrap"></div>
-</main>
+<br>
 
-<!-- Detail Panel -->
-<div id="detail-panel">
-  <div class="detail-avatar" id="detail-avatar"></div>
-  <div style="flex:1;min-width:0">
-    <div id="detail-name"></div>
-    <div id="detail-meta"></div>
-    <div id="detail-parent"></div>
-    <div id="detail-children"></div>
-    <div id="detail-bio"></div>
-  </div>
-  <div class="detail-actions">
-    <button id="btn-edit-detail"   onclick="openEditModal()">✏️ تعديل</button>
-    <button id="btn-delete-detail" onclick="openDeleteModal()">🗑 حذف</button>
-    <button id="btn-close-detail"  onclick="closeDetail()">✕</button>
-  </div>
-</div>
+<div id="members"></div>
 
-<!-- Add / Edit Modal -->
-<div class="modal-backdrop" id="form-modal" onclick="closeFormModal(event)">
-  <div class="modal-box modal-form-box" id="form-modal-box" onclick="event.stopPropagation()">
-    <div class="modal-title" id="form-modal-title"></div>
-
-    <div class="form-group">
-      <label class="form-label">الاسم الكامل *</label>
-      <input type="text" id="f-name" placeholder="مثال: عبدالله محمد" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">سنة الميلاد</label>
-      <input type="text" id="f-birth" placeholder="مثال: 1970" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">سنة الوفاة</label>
-      <input type="text" id="f-death" placeholder="اتركه فارغاً إن كان حياً" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">الزوج / الزوجة</label>
-      <input type="text" id="f-spouse" placeholder="اسم الشريك" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">نبذة مختصرة</label>
-      <input type="text" id="f-bio" placeholder="وصف قصير" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">الجنس</label>
-      <div class="gender-row">
-        <button class="gender-btn" id="btn-gender-male"   onclick="setGender('male')">👨 ذكر</button>
-        <button class="gender-btn" id="btn-gender-female" onclick="setGender('female')">👩 أنثى</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">الوالد / الجد</label>
-      <select id="f-parent"></select>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-primary" id="form-save-btn" onclick="saveForm()">✅ إضافة</button>
-      <button class="btn btn-ghost" onclick="closeFormModal()">إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Modal -->
-<div class="modal-backdrop" id="delete-modal" onclick="closeDeleteModal()">
-  <div class="modal-box modal-delete-box" onclick="event.stopPropagation()">
-    <div class="delete-icon">⚠️</div>
-    <div class="delete-title">تأكيد الحذف</div>
-    <p class="delete-msg">هل تريد حذف <strong id="delete-name" style="color:#ffaaaa"></strong>؟</p>
-    <p class="delete-warning" id="delete-warning" style="display:none"></p>
-    <div class="modal-actions" style="margin-top:0">
-      <button class="btn btn-red" onclick="confirmDelete()">🗑 نعم، احذف</button>
-      <button class="btn btn-ghost" onclick="closeDeleteModal()">تراجع</button>
-    </div>
-  </div>
-</div>
+<div id="sync-status"></div>
 
 <script>
-/* ══════════════════════════════════════════════
-   SUPABASE INIT
-══════════════════════════════════════════════ */
+
 const { createClient } = supabase;
-const sb = createClient(
-  'https://glryjpqtsahmgnyjawyq.supabase.co',
-  'sb_publishable_I-yYxgCUa07AOCu47lpXSA_cojuy8e0'
+
+const supabaseClient = createClient(
+'https://glryjpqtsahmgnyjawyq.supabase.co',
+'sb_publishable_I-yYxgCUa07AOCu47lpXSA_cojuy8e0'
 );
 
-/* ══════════════════════════════════════════════
-   DATA
-══════════════════════════════════════════════ */
-let members = [
-  { id:1,  name:"رابح",        birth:"", death:null, gender:"male",   parentId:null, spouse:null, bio:"الجد", sort_order:0 },
-  { id:2,  name:"ناصر",        birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:0 },
-  { id:3,  name:"عبدالعزيز",   birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:1 },
-  { id:4,  name:"عواطف",       birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:2 },
-  { id:5,  name:"ناصرة",       birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:3 },
-  { id:6,  name:"مريم",        birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:4 },
-  { id:7,  name:"منصور",       birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:5 },
-  { id:8,  name:"عمر",         birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:6 },
-  { id:9,  name:"عثمان",       birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:7 },
-  { id:10, name:"عادل",        birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:8 },
-  { id:11, name:"ماجد",        birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:9 },
-  { id:12, name:"عبدالرحمن",   birth:"", death:null, gender:"male",   parentId:1,    spouse:null, bio:"", sort_order:10 },
-  { id:13, name:"خديجة",       birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:11 },
-  { id:14, name:"أمل",         birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:12 },
-  { id:15, name:"ليلى",        birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:13 },
-  { id:16, name:"ماجدة",       birth:"", death:null, gender:"female", parentId:1,    spouse:null, bio:"", sort_order:14 },
-];
-let nextId = 17;
-let selectedId = null;
-let formMode = 'add';
-let formGender = 'male';
-let dbReady = false;
+function syncStatus(msg){
 
-/* ══════════════════════════════════════════════
-   SYNC HELPERS
-══════════════════════════════════════════════ */
-function syncStatus(msg, type='') {
-  const el = document.getElementById('sync-status');
-  el.textContent = msg;
-  el.className = 'show ' + type;
-  clearTimeout(el._t);
-  if (type === 'ok') el._t = setTimeout(() => el.classList.remove('show'), 3000);
+const el=document.getElementById("sync-status");
+
+if(!el)return;
+
+el.textContent=msg;
+
+setTimeout(()=>{
+el.textContent="";
+},3000);
+
 }
 
-/* ══════════════════════════════════════════════
-   DATABASE SETUP & LOAD
-══════════════════════════════════════════════ */
-async function setupDB() {
-  syncStatus('⏳ جارٍ الاتصال بقاعدة البيانات...');
-  try {
-    // Try to read from DB first
-    const { data, error } = await sb.from('members').select('*').order('sort_order');
-    if (error) {
-      // Table might not exist — create it via RPC won't work without admin
-      // Fallback: use localStorage + show instructions
-      syncStatus('⚠️ قاعدة البيانات تحتاج إعداد — انظر التعليمات', 'err');
-      loadLocal();
-      renderTree();
-      showSetupInstructions();
-      return;
-    }
-    if (data && data.length > 0) {
-      // DB has data — use it
-      members = data.map(r => ({
-        id: r.id, name: r.name, birth: r.birth || '',
-        death: r.death || null, gender: r.gender,
-        parentId: r.parent_id, spouse: r.spouse || null,
-        bio: r.bio || '', sort_order: r.sort_order || 0
-      }));
-      nextId = Math.max(...members.map(m => m.id)) + 1;
-      syncStatus('✅ تم التحميل من قاعدة البيانات', 'ok');
-    } else {
-      // DB empty — push initial data
-      syncStatus('⏳ جارٍ رفع البيانات الأولية...');
-      await pushAllToDB();
-      syncStatus('✅ تم حفظ البيانات في قاعدة البيانات', 'ok');
-    }
-    dbReady = true;
-    // Subscribe to realtime changes
-    sb.channel('members-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        loadFromDB();
-      })
-      .subscribe();
-  } catch(e) {
-    syncStatus('⚠️ خطأ في الاتصال — يعمل محلياً', 'err');
-    loadLocal();
-  }
-  renderTree();
+async function loadMembers(){
+
+try{
+
+const { data, error } = await supabaseClient
+.from('members')
+.select('*')
+.order('id');
+
+if(error){
+
+console.error(error);
+syncStatus("خطأ تحميل البيانات");
+
+return;
+
 }
 
-async function loadFromDB() {
-  const { data } = await sb.from('members').select('*').order('sort_order');
-  if (data) {
-    members = data.map(r => ({
-      id: r.id, name: r.name, birth: r.birth || '',
-      death: r.death || null, gender: r.gender,
-      parentId: r.parent_id, spouse: r.spouse || null,
-      bio: r.bio || '', sort_order: r.sort_order || 0
-    }));
-    nextId = Math.max(...members.map(m => m.id)) + 1;
-    renderTree();
-    if (selectedId) showDetail(selectedId);
-  }
+renderMembers(data);
+
+}catch(e){
+
+console.error(e);
+
 }
 
-async function pushAllToDB() {
-  const rows = members.map(m => ({
-    id: m.id, name: m.name, birth: m.birth || null,
-    death: m.death || null, gender: m.gender,
-    parent_id: m.parentId, spouse: m.spouse || null,
-    bio: m.bio || '', sort_order: m.sort_order || 0
-  }));
-  await sb.from('members').upsert(rows);
 }
 
-async function dbInsert(m) {
-  if (!dbReady) { saveLocal(); return; }
-  const { error } = await sb.from('members').insert({
-    id: m.id, name: m.name, birth: m.birth || null,
-    death: m.death || null, gender: m.gender,
-    parent_id: m.parentId, spouse: m.spouse || null,
-    bio: m.bio || '', sort_order: m.sort_order || 0
-  });
-  if (error) syncStatus('⚠️ خطأ في الحفظ', 'err');
-  else syncStatus('✅ تم الحفظ', 'ok');
-  saveLocal();
+function renderMembers(list){
+
+const box=document.getElementById("members");
+
+box.innerHTML="";
+
+list.forEach(m=>{
+
+const div=document.createElement("div");
+
+div.className="member";
+
+div.innerHTML=m.name;
+
+box.appendChild(div);
+
+});
+
 }
 
-async function dbUpdate(m) {
-  if (!dbReady) { saveLocal(); return; }
-  const { error } = await sb.from('members').update({
-    name: m.name, birth: m.birth || null,
-    death: m.death || null, gender: m.gender,
-    parent_id: m.parentId, spouse: m.spouse || null,
-    bio: m.bio || '', sort_order: m.sort_order || 0
-  }).eq('id', m.id);
-  if (error) syncStatus('⚠️ خطأ في التحديث', 'err');
-  else syncStatus('✅ تم الحفظ', 'ok');
-  saveLocal();
+async function addMember(){
+
+const name=document.getElementById("name").value;
+
+if(!name)return;
+
+const id=Math.floor(Math.random()*999999);
+
+const {error}=await supabaseClient
+.from('members')
+.insert({
+id:id,
+name:name
+});
+
+if(error){
+
+console.error(error);
+
+syncStatus("فشل الحفظ");
+
+return;
+
 }
 
-async function dbDelete(ids) {
-  if (!dbReady) { saveLocal(); return; }
-  const { error } = await sb.from('members').delete().in('id', [...ids]);
-  if (error) syncStatus('⚠️ خطأ في الحذف', 'err');
-  else syncStatus('✅ تم الحذف', 'ok');
-  saveLocal();
+syncStatus("تم الحفظ");
+
+document.getElementById("name").value="";
+
+loadMembers();
+
 }
 
-/* LocalStorage fallback */
-function saveLocal() {
-  try { localStorage.setItem('ft_members', JSON.stringify(members)); localStorage.setItem('ft_nextId', nextId); } catch(e){}
-}
-function loadLocal() {
-  try {
-    const s = localStorage.getItem('ft_members');
-    if (s) members = JSON.parse(s);
-    const n = localStorage.getItem('ft_nextId');
-    if (n) nextId = Number(n);
-  } catch(e){}
-}
+window.addEventListener("DOMContentLoaded",()=>{
 
-/* Setup instructions if table missing */
-function showSetupInstructions() {
-  const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;direction:rtl';
-  d.innerHTML = `<div style="background:linear-gradient(160deg,#0a1828,#112240);border:1.5px solid #4a90d9;border-radius:20px;padding:32px;max-width:520px;width:95vw;font-family:Tajawal,sans-serif;color:#d0e8ff">
-    <h2 style="font-family:Amiri,serif;font-size:22px;text-align:center;margin-bottom:16px">⚙️ إعداد قاعدة البيانات</h2>
-    <p style="color:#7aabcc;font-size:13px;margin-bottom:14px">نفّذ هذا الـ SQL في Supabase → SQL Editor:</p>
-    <pre style="background:#060d18;border:1px solid #2a4a6a;border-radius:10px;padding:14px;font-size:11px;color:#4ad95a;overflow-x:auto;direction:ltr;text-align:left">CREATE TABLE members (
-  id BIGINT PRIMARY KEY,
-  name TEXT NOT NULL,
-  birth TEXT,
-  death TEXT,
-  gender TEXT NOT NULL,
-  parent_id BIGINT REFERENCES members(id),
-  spouse TEXT,
-  bio TEXT,
-  sort_order INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "public_all" ON members FOR ALL USING (true) WITH CHECK (true);</pre>
-    <p style="color:#7aabcc;font-size:12px;margin-top:12px;margin-bottom:16px">بعد التنفيذ اضغط الزر أدناه:</p>
-    <button onclick="this.parentElement.parentElement.remove();setupDB()" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#2e6da4,#4a90d9);color:#fff;font-family:Tajawal,sans-serif;font-size:15px;font-weight:700;cursor:pointer">✅ تم — اتصل بقاعدة البيانات</button>
-  </div>`;
-  document.body.appendChild(d);
-}
+loadMembers();
 
-/* ══════════════════════════════════════════════
-   STARS
-══════════════════════════════════════════════ */
-(function buildStars() {
-  const c = document.getElementById('stars');
-  for (let i = 0; i < 60; i++) {
-    const s = document.createElement('div');
-    s.className = 'star';
-    const sz = i % 4 === 0 ? 2 : 1.2;
-    s.style.cssText = `width:${sz}px;height:${sz}px;left:${(i*37+13)%100}%;top:${(i*53+7)%100}%;opacity:${0.07+(i%6)*0.05}`;
-    c.appendChild(s);
-  }
-})();
+});
 
-/* ══════════════════════════════════════════════
-   TREE RENDERING
-══════════════════════════════════════════════ */
-function getCardClass(m) {
-  if (m.bio === 'أنا') return 'card-self';
-  return m.gender === 'female' ? 'card-female' : 'card-male';
-}
-
-function buildCard(m) {
-  const cls = getCardClass(m);
-  const emoji = m.gender === 'female' ? '👩' : '👨';
-  const dates = m.birth ? (m.death ? `${m.birth} — ${m.death}` : m.birth) : '';
-  const sel = selectedId === m.id ? ' selected' : '';
-  return `
-    <div class="member-card ${cls}${sel}" id="card-${m.id}" onclick="selectMember(${m.id})">
-      <div class="avatar">${emoji}</div>
-      <div class="card-name">${m.name}</div>
-      ${dates ? `<div class="card-dates">${dates}</div>` : ''}
-    </div>`;
-}
-
-function buildLevel(levelMembers) {
-  if (!levelMembers.length) return '';
-  const nodes = levelMembers.map(m => {
-    const kids = members.filter(c => c.parentId === m.id);
-    let inner = buildCard(m);
-    if (kids.length) {
-      const hLine = kids.length > 1 ? `<div class="connector-h"></div>` : '';
-      inner += `<div class="connector-v"></div>
-        <div class="connector-h-wrap">
-          ${hLine}
-          <div class="tree-level">${buildLevel(kids)}</div>
-        </div>`;
-    }
-    return `<div class="tree-node">${inner}</div>`;
-  }).join('');
-  return nodes;
-}
-
-function renderTree() {
-  const roots = members.filter(m => m.parentId === null && members.some(c => c.parentId === m.id));
-  const display = roots.length ? roots : members.filter(m => m.parentId === null);
-  document.getElementById('tree-wrap').innerHTML =
-    `<div class="tree-level">${buildLevel(display)}</div>`;
-  document.getElementById('member-count').textContent = `${members.length} فرد مسجّل`;
-}
-
-/* ══════════════════════════════════════════════
-   SEARCH
-══════════════════════════════════════════════ */
-function handleSearch() {
-  const q = document.getElementById('search-input').value.trim();
-  const wrap = document.getElementById('tree-wrap');
-  const sr    = document.getElementById('search-results');
-  const lbl   = document.getElementById('search-label');
-  const none  = document.getElementById('no-results');
-
-  if (!q) {
-    wrap.style.display = '';
-    sr.classList.remove('visible');
-    lbl.textContent = '';
-    none.style.display = 'none';
-    return;
-  }
-  const res = members.filter(m => m.name.includes(q));
-  wrap.style.display = 'none';
-  lbl.textContent = `نتائج البحث عن «${q}» — ${res.length} نتيجة`;
-  if (!res.length) {
-    sr.classList.remove('visible');
-    none.style.display = 'block';
-  } else {
-    none.style.display = 'none';
-    sr.innerHTML = res.map(m => buildCard(m)).join('');
-    sr.classList.add('visible');
-  }
-}
-
-/* ══════════════════════════════════════════════
-   SELECTION & DETAIL PANEL
-══════════════════════════════════════════════ */
-function selectMember(id) {
-  if (selectedId === id) { closeDetail(); return; }
-  selectedId = id;
-  document.querySelectorAll('.member-card').forEach(c => c.classList.remove('selected'));
-  document.querySelectorAll(`#card-${id}`).forEach(c => c.classList.add('selected'));
-  showDetail(id);
-}
-
-function showDetail(id) {
-  const m = members.find(x => x.id === id);
-  if (!m) return;
-  const cls = getCardClass(m);
-  const colors = {
-    'card-male':   { border:'#4a90d9', bg:'radial-gradient(circle,#2e6da4,#1a3a5c)' },
-    'card-female': { border:'#c46dd4', bg:'radial-gradient(circle,#8e3a9e,#3a1a3c)' },
-    'card-self':   { border:'#4ad95a', bg:'radial-gradient(circle,#2e8a3e,#1a3a1a)' },
-  };
-  const c = colors[cls];
-  const av = document.getElementById('detail-avatar');
-  av.innerHTML = m.gender === 'female' ? '👩' : '👨';
-  av.style.background = c.bg;
-  av.style.borderColor = c.border;
-  av.style.boxShadow = `0 0 14px ${c.border}66`;
-
-  document.getElementById('detail-panel').style.borderColor = c.border;
-  document.getElementById('detail-name').style.color = m.bio==='أنا'?'#d0ffd8':m.gender==='female'?'#f8d0ff':'#d0e8ff';
-  document.getElementById('detail-name').textContent = m.name;
-
-  const alive = m.death ? ` — ${m.death}` : ' · حيّ';
-  let meta = `📅 ${m.birth||'—'}${alive}`;
-  if (m.spouse) meta += `  · 💑 ${m.spouse}`;
-  document.getElementById('detail-meta').textContent = meta;
-
-  const parent = members.find(x => x.id === m.parentId);
-  document.getElementById('detail-parent').textContent = parent ? `👤 الوالد: ${parent.name}` : '';
-  const kids = members.filter(x => x.parentId === m.id).length;
-  document.getElementById('detail-children').textContent = kids ? `👨‍👧 الأبناء: ${kids}` : '';
-  document.getElementById('detail-bio').textContent = m.bio || '';
-
-  document.getElementById('detail-panel').classList.add('visible');
-}
-
-function closeDetail() {
-  selectedId = null;
-  document.querySelectorAll('.member-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('detail-panel').classList.remove('visible');
-}
-
-/* ══════════════════════════════════════════════
-   FORM MODAL (ADD / EDIT)
-══════════════════════════════════════════════ */
-function populateParentSelect(excludeIds) {
-  const sel = document.getElementById('f-parent');
-  sel.innerHTML = '<option value="">— بدون والد (جذر الشجرة) —</option>';
-  members.filter(m => !excludeIds.has(m.id)).forEach(m => {
-    const o = document.createElement('option');
-    o.value = m.id; o.textContent = m.name;
-    sel.appendChild(o);
-  });
-}
-
-function getDescendants(id) {
-  const d = new Set();
-  const w = p => members.filter(m => m.parentId === p).forEach(m => { d.add(m.id); w(m.id); });
-  w(id); return d;
-}
-
-function setGender(g) {
-  formGender = g;
-  document.getElementById('btn-gender-male').className   = 'gender-btn' + (g==='male'   ? ' active-male'   : '');
-  document.getElementById('btn-gender-female').className = 'gender-btn' + (g==='female' ? ' active-female' : '');
-}
-
-function openAddModal() {
-  formMode = 'add';
-  document.getElementById('form-modal-title').textContent = '➕ إضافة فرد جديد';
-  document.getElementById('form-modal-title').style.color = '#d0e8ff';
-  document.getElementById('form-modal-box').classList.remove('edit-mode');
-  document.getElementById('form-save-btn').textContent = '✅ إضافة';
-  document.getElementById('form-save-btn').className = 'btn btn-primary';
-  ['f-name','f-birth','f-death','f-spouse','f-bio'].forEach(id => document.getElementById(id).value = '');
-  setGender('male');
-  populateParentSelect(new Set());
-  document.getElementById('form-modal').classList.add('open');
-  document.getElementById('f-name').focus();
-}
-
-function openEditModal() {
-  if (!selectedId) return;
-  const m = members.find(x => x.id === selectedId);
-  formMode = 'edit';
-  document.getElementById('form-modal-title').textContent = `✏️ تعديل: ${m.name}`;
-  document.getElementById('form-modal-title').style.color = '#f8d0ff';
-  document.getElementById('form-modal-box').classList.add('edit-mode');
-  document.getElementById('form-save-btn').textContent = '💾 حفظ التعديلات';
-  document.getElementById('form-save-btn').className = 'btn btn-purple';
-
-  document.getElementById('f-name').value   = m.name   || '';
-  document.getElementById('f-birth').value  = m.birth  || '';
-  document.getElementById('f-death').value  = m.death  || '';
-  document.getElementById('f-spouse').value = m.spouse || '';
-  document.getElementById('f-bio').value    = m.bio    || '';
-  setGender(m.gender);
-
-  const forbidden = new Set([m.id, ...getDescendants(m.id)]);
-  populateParentSelect(forbidden);
-  document.getElementById('f-parent').value = m.parentId ?? '';
-
-  document.getElementById('form-modal').classList.add('open');
-}
-
-function closeFormModal(e) {
-  if (e && e.target !== document.getElementById('form-modal')) return;
-  document.getElementById('form-modal').classList.remove('open');
-}
-
-function saveForm() {
-  const name = document.getElementById('f-name').value.trim();
-  if (!name) { document.getElementById('f-name').style.borderColor='#a04040'; return; }
-  document.getElementById('f-name').style.borderColor='';
-
-  const parentVal = document.getElementById('f-parent').value;
-  const data = {
-    name,
-    birth:   document.getElementById('f-birth').value.trim()  || '',
-    death:   document.getElementById('f-death').value.trim()  || null,
-    spouse:  document.getElementById('f-spouse').value.trim() || null,
-    bio:     document.getElementById('f-bio').value.trim()    || '',
-    gender:  formGender,
-    parentId: parentVal !== '' ? Number(parentVal) : null,
-  };
-
-  if (formMode === 'add') {
-    const newM = { ...data, id: nextId++, sort_order: members.filter(m=>m.parentId===data.parentId).length };
-    members.push(newM);
-    dbInsert(newM);
-  } else {
-    members = members.map(m => m.id === selectedId ? { ...m, ...data } : m);
-    dbUpdate(members.find(m => m.id === selectedId));
-  }
-
-  document.getElementById('form-modal').classList.remove('open');
-  renderTree();
-  handleSearch();
-  if (selectedId) showDetail(selectedId);
-}
-
-/* ══════════════════════════════════════════════
-   DELETE MODAL
-══════════════════════════════════════════════ */
-function openDeleteModal() {
-  if (!selectedId) return;
-  const m = members.find(x => x.id === selectedId);
-  const kids = members.filter(x => x.parentId === m.id).length;
-  document.getElementById('delete-name').textContent = m.name;
-  const warn = document.getElementById('delete-warning');
-  if (kids > 0) { warn.textContent = `⚠️ سيتم حذف ${kids} فرد مرتبط به أيضاً!`; warn.style.display = 'block'; }
-  else warn.style.display = 'none';
-  document.getElementById('delete-modal').classList.add('open');
-}
-
-function closeDeleteModal() {
-  document.getElementById('delete-modal').classList.remove('open');
-}
-
-function confirmDelete() {
-  if (!selectedId) return;
-  const toDelete = new Set([selectedId, ...getDescendants(selectedId)]);
-  dbDelete(toDelete);
-  members = members.filter(m => !toDelete.has(m.id));
-  selectedId = null;
-  document.getElementById('delete-modal').classList.remove('open');
-  document.getElementById('detail-panel').classList.remove('visible');
-  renderTree();
-  handleSearch();
-}
-
-/* ══════════════════════════════════════════════
-   INIT
-══════════════════════════════════════════════ */
-setupDB();
 </script>
-<div id="sync-status"></div>
+
 </body>
+
 </html>
